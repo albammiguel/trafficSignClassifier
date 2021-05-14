@@ -1,13 +1,9 @@
 import argparse
+from FileManager import FileManager
 import cv2
-import matplotlib.pyplot as plt
-import numpy as np
+#import matplotlib.pyplot as plt
+#import numpy as np
 
-def loadData(path, numberOfFiles):
-    imagesArray = numberOfFiles * [0]
-    for i in range(numberOfFiles):
-        imagesArray[i] = cv2.imread(path + numberOfFiles + ".ppm")
-    return imagesArray
 
 
 
@@ -24,7 +20,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    image = cv2.imread('C://Users//albam//Desktop//URJC//SEGUNDO_CUATRIMESTRE//VISION_ARTIFICIAL//PRACITCA_1//train//train//00398.ppm')
+
+
+    """image = cv2.imread('C://Users//albam//Desktop//URJC//SEGUNDO_CUATRIMESTRE//VISION_ARTIFICIAL//PRACITCA_1//train//train//00398.ppm')
     image_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     ret, binary = cv2.threshold(image_grey, 180, 200, cv2.THRESH_BINARY)
@@ -40,18 +38,22 @@ if __name__ == "__main__":
 
     cv2.imshow('2', image)
 
-    cv2.waitKey()
-
-
-
-
-
+    cv2.waitKey()"""
 
 
 
     # Load training data
+    fileManager =  FileManager()
+    numberTrainFiles = fileManager.countNumberOfFiles(args.train_path)
+    images = fileManager.loadTrainData(args.train_path, numberTrainFiles)
+    cv2.imshow("train", images[66])
+    cv2.waitKey();
     # Create the detector
     # Load testing data
+    numberTestFiles = fileManager.countNumberOfFiles(args.test_path)
+    imagesTest = fileManager.loadTestData(args.test_path, numberTestFiles)
+    cv2.imshow("test", imagesTest[10])
+    cv2.waitKey()
     # Evaluate sign detections
 
 
