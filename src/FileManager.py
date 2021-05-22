@@ -16,9 +16,8 @@ class FileManager:
         trainFile = open(path + "\\" + "gt.txt", "r").readlines()
         for i in range(numberOfFiles - 1):
             trainImagesArray[i] = cv2.imread(path + "\\" + ('%05d' % i) + ".ppm")
-            trainInfoImagesArray[i] = ImageInfo(('%05d' % i) + ".ppm")
             print("Readed " + path + "\\" + ('%05d' % i) + ".ppm")
-            self.loadInfoSigns(trainFile, trainInfoImagesArray[i])
+            trainInfoImagesArray[i] = self.loadInfoSigns(trainFile, ('%05d' % i) + ".ppm")
         return trainImagesArray, trainInfoImagesArray
 
     def loadTestData(self, path, numberOfFiles):
@@ -28,23 +27,20 @@ class FileManager:
             print("Readed " + path + "\\" + ('%05d' % (400 + i)) + ".jpg")
         return testImagesArray
 
-    def loadInfoSigns(self, trainFile, trainImage):
+    def loadInfoSigns(self, trainFile, name):
 
         listSigns = []
         cont = 0
         for i in range(len(trainFile)):
             infoLine = trainFile[i].split(";")
-            if(infoLine[0] == getattr(trainImage,'image') ):
-                print(getattr(trainImage,'image'))
+            if(infoLine[0] == name):
                 sign = SignInfo(infoLine[1],infoLine[2],infoLine[3],infoLine[4],infoLine[5])
                 sign.printSign()
                 listSigns.append(sign)
                 ++cont
 
-        if (cont != 0):
-            setattr(trainImage, cont, 'numberSigns')
-            setattr(trainImage, listSigns, 'listSignInfo')
-
+        image = ImageInfo(name,cont,listSigns)
+        return image
 
 
 
