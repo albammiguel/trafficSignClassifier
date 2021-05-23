@@ -5,7 +5,6 @@ class SignInfo:
     x2 = 0
     y2 = 0
     tipo = 0
-    score = 0
 
     def __init__(self, x1, y1, x2, y2, tipo):
         self.x1 = x1

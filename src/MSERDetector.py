@@ -6,14 +6,14 @@ class MSERDetector:
 
     def cropResizedImage(self, image, x1, x2, y1, y2):
         # cortamos el area de la imagen donde está la señal.
-        cropp_image = image[y1:y2, x1:x2]
+            cropp_image = image[y1:y2, x1:x2]
 
         # redimensionamos el area recortada.
-        resized_image = cv2.resize(cropp_image, (25, 25), interpolation=cv2.INTER_AREA)
-
-        return resized_image
-
-
+            if (len(cropp_image) != 0):
+                resized_image = cv2.resize(cropp_image, (25, 25), interpolation=cv2.INTER_AREA)
+                return resized_image
+            else:
+                return []
 
     def getSignByTypeList(self, numberTrainFiles, imagesTrain, trainInfoImagesArray):
 
@@ -25,10 +25,7 @@ class MSERDetector:
             image = imagesTrain[i]
             image_info = trainInfoImagesArray[i]
             list_signs = getattr(image_info, 'listSignInfo')
-            cont = 0
             for sign in list_signs:
-                print("Señal " + str(cont) + " de la imagen " + getattr(image_info, 'image'))
-                print("-----------")
                 x1, y1 = int(getattr(sign, 'x1')), int(getattr(sign, 'y1'))
                 x2, y2 = int(getattr(sign, 'x2')), int(getattr(sign, 'y2'))
                 tipo = int(getattr(sign, 'tipo'))
@@ -56,11 +53,14 @@ class MSERDetector:
 
 
     def createMask(self,avg_image):
-        img_hsv = cv2.cvtColor(avg_image, cv2.COLOR_BGR2HSV)
+        if (len(avg_image) != 0):
+            img_hsv = cv2.cvtColor(avg_image, cv2.COLOR_BGR2HSV)
 
-        #obtener mascara de los valores mas bajos de rojo.
-        mask1 = cv2.inRange(img_hsv, (0, 50, 20), (5, 255, 255))
-        # obtener mascara de los valores mas altos de rojo.
-        mask2 = cv2.inRange(img_hsv, (175, 50, 20), (180, 255, 255))
+            #obtener mascara de los valores mas bajos de rojo.
+            mask1 = cv2.inRange(img_hsv, (0, 50, 0), (5, 255, 255))
+            # obtener mascara de los valores mas altos de rojo.
+            mask2 = cv2.inRange(img_hsv, (175, 50, 0), (180, 255, 255))
 
-        return (mask1 | mask2)
+            return (mask1 | mask2)
+        else:
+            return []

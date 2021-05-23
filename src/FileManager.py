@@ -28,14 +28,12 @@ class FileManager:
         return testImagesArray
 
     def loadInfoSigns(self, trainFile, name):
-
         listSigns = []
         cont = 0
         for i in range(len(trainFile)):
             infoLine = trainFile[i].split(";")
             if(infoLine[0] == name):
                 sign = SignInfo(infoLine[1],infoLine[2],infoLine[3],infoLine[4],infoLine[5])
-                sign.printSign()
                 listSigns.append(sign)
                 ++cont
 
