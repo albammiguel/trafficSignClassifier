@@ -28,7 +28,6 @@ class FileManager:
         return testImagesArray
 
     def loadInfoSigns(self, trainFile, name):
-
         listSigns = []
         cont = 0
         for i in range(len(trainFile)):

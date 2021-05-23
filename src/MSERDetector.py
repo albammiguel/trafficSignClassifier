@@ -6,18 +6,14 @@ class MSERDetector:
 
     def cropResizedImage(self, image, x1, x2, y1, y2):
         # cortamos el area de la imagen donde está la señal.
-        cropp_image = image[y1:y2, x1:x2]
+            cropp_image = image[y1:y2, x1:x2]
 
         # redimensionamos el area recortada.
-        if (len(cropp_image) != 0):
-            resized_image = cv2.resize(cropp_image, (25, 25), interpolation=cv2.INTER_AREA)
-
-            return resized_image
-        else:
-            return []
-
-
-
+            if (len(cropp_image) != 0):
+                resized_image = cv2.resize(cropp_image, (25, 25), interpolation=cv2.INTER_AREA)
+                return resized_image
+            else:
+                return []
 
     def getSignByTypeList(self, numberTrainFiles, imagesTrain, trainInfoImagesArray):
 
@@ -61,9 +57,9 @@ class MSERDetector:
             img_hsv = cv2.cvtColor(avg_image, cv2.COLOR_BGR2HSV)
 
             #obtener mascara de los valores mas bajos de rojo.
-            mask1 = cv2.inRange(img_hsv, (0, 0, 0), (5, 255, 255))
+            mask1 = cv2.inRange(img_hsv, (0, 50, 0), (5, 255, 255))
             # obtener mascara de los valores mas altos de rojo.
-            mask2 = cv2.inRange(img_hsv, (175, 0, 0), (180, 255, 255))
+            mask2 = cv2.inRange(img_hsv, (175, 50, 0), (180, 255, 255))
 
             return (mask1 | mask2)
         else:
