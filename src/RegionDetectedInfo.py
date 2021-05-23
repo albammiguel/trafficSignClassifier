@@ -1,11 +1,16 @@
+from SignInfo import SignInfo
 
-class RegionDetectedInfo:
+
+class RegionDetectedInfo(SignInfo):
     image = None
     score = 0
-    signInfo = None
 
-    def __init__(self, image, signInfo):
+    def __init__(self, image, x1, x2, y1, y2, tipo):
+        SignInfo.__init__(self, x1, x2, y1, y2, tipo)
         self.image = image
-        self.signInfo = signInfo
+
+    def printRegionDetected(self):
+        print("score: " + str(self.score))
+        SignInfo.printSign(self)
 
 
