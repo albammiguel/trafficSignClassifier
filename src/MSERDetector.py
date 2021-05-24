@@ -68,7 +68,7 @@ class MSERDetector:
             # obtener mascara de los valores mas altos de rojo.
             mask2 = cv2.inRange(img_hsv, (175, 50, 0), (180, 255, 255))
 
-            return (mask1 | mask2)
+            return cv2.bitwise_or(mask1, mask2)
         else:
             return []
 
@@ -86,6 +86,28 @@ class MSERDetector:
                 correlation = correlation + mask_1[i, j] * mask_2[i, j]
 
         return correlation
+
+    def overlappingArea(self, region1, region2):
+
+        region1_x1 = RegionDetectedInfo.__getattribute__(region1, 'x1')
+        region1_y1 = RegionDetectedInfo.__getattribute__(region1, 'y1')
+
+        region2_x1 = RegionDetectedInfo.__getattribute__(region2, 'x1')
+        region2_y1 = RegionDetectedInfo.__getattribute__(region2, 'y1')
+
+        dif_x1 = abs(region1_x1 - region2_x1)
+        dif_y1 = abs(region1_y1 - region2_y1)
+
+        print("resta x1: " + str(dif_x1))
+        print("resta y1: " + str(dif_y1))
+
+        if((5 <= dif_x1 <= 21) or  (5 <= dif_y1 <= 21)):
+            return True
+
+        return False
+
+
+
 
     def evaluateSignDetections(self, numberTestFiles, imagesTest):
 
@@ -113,47 +135,84 @@ class MSERDetector:
                     if(x1 >= 0 and y1>=0):
                         crop_image = self.cropResizedImage(image, x1, x2, y1, y2)
 
-                    mask_image = self.createMask(crop_image)
+                        mask_image = self.createMask(crop_image)
 
-                    if(len(crop_image) != 0):
-                        region = RegionDetectedInfo(mask_image, x1, y1, x2, y2, -1)
-                        detectedRegionsList.append(region)
+                        if(len(crop_image) != 0):
+                            region = RegionDetectedInfo(mask_image, x1, y1, x2, y2, -1)
+                            detectedRegionsList.append(region)
 
-            self.detectSign(detectedRegionsList, image)
+            regions_with_sign = self.detectSign(detectedRegionsList)
+            regions_no_overlapping = self.checkOverlapping(regions_with_sign)
+            self.drawRectangle(regions_no_overlapping, image)
 
 
 
-    def detectSign(self, detectedRegionsList, image):
+    def checkOverlapping(self, regions_with_sign):
+        len_list = len(regions_with_sign)
+        regions_copy = regions_with_sign.copy()
+
+        for region1 in regions_with_sign[:len_list-1]:
+            for region2 in regions_with_sign[1:len_list-1]:
+
+                if(self.overlappingArea(region1, region2)):
+                    score1 = RegionDetectedInfo.__getattribute__(region1, 'score')
+                    score2 = RegionDetectedInfo.__getattribute__(region2, 'score')
+                    if (score1 < score2):
+                        print("Elegida señal +1")
+                        if(region1 in regions_copy):
+                            regions_copy.remove(region1)
+                    else:
+                        print("Elegida señal 1")
+                        if (region2 in regions_copy):
+                            regions_copy.remove(region2)
+
+        return regions_copy
+
+
+
+    def drawRectangle(self, sectionsList, image):
+        for sectionImg in sectionsList:
+            x1 = RegionDetectedInfo.__getattribute__(sectionImg, 'x1')
+            x2 = RegionDetectedInfo.__getattribute__(sectionImg, 'x2')
+            y1 = RegionDetectedInfo.__getattribute__(sectionImg, 'y1')
+            y2 = RegionDetectedInfo.__getattribute__(sectionImg, 'y2')
+
+            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
+
+        cv2.imshow("imagen", image)
+        cv2.waitKey()
+
+
+
+
+
+    def detectSign(self, detectedRegionsList):
 
         white_mask = 255 * np.ones((25,25), dtype=np.uint8)
-
+        regions_with_sign = []
         for sectionImg in detectedRegionsList:
 
             mask_image = RegionDetectedInfo.__getattribute__(sectionImg, 'image')
-
             corrProhibition = self.calculateCorrelationScore(mask_image, self.mask_prohibition)
             corrDanger = self.calculateCorrelationScore(mask_image, self.mask_danger)
             corrStop = self.calculateCorrelationScore(mask_image, self.mask_stop)
             corrWhite = self.calculateCorrelationScore(mask_image, white_mask)
 
             isWhite = False
-            if(corrWhite >= 200):
-                detectedRegionsList.remove(sectionImg)
+            if(corrWhite >= 300):
                 isWhite = True
                 print("la imagen es blanca")
-            elif (max(corrDanger, corrProhibition, corrStop) >= 40 and not(isWhite)):
+            elif (max(corrDanger, corrProhibition, corrStop) > 40 and not(isWhite)):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
                 RegionDetectedInfo.__setattr__(sectionImg, 'score', max(corrDanger, corrProhibition, corrStop))
                 print("----Señal detectada-----")
                 RegionDetectedInfo.printRegionDetected(sectionImg)
 
-                x1 = RegionDetectedInfo.__getattribute__(sectionImg, 'x1')
-                x2 = RegionDetectedInfo.__getattribute__(sectionImg, 'x2')
-                y1 = RegionDetectedInfo.__getattribute__(sectionImg, 'y1')
-                y2 = RegionDetectedInfo.__getattribute__(sectionImg, 'y2')
+                regions_with_sign.append(sectionImg)
 
-                cv2.rectangle(image, (x1,y1), (x2, y2), (0, 0, 255), 1)
 
-        cv2.imshow("imagen", image)
-        cv2.waitKey()
+
+        return regions_with_sign
+
+
 
