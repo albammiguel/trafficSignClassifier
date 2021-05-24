@@ -40,6 +40,16 @@ class FileManager:
         image = ImageInfo(name,cont,listSigns)
         return image
 
+    def generateResultFile(self, name, textFile):
+        f = open(name, "w")
+        f.write(textFile)
+        f.close()
+
+    def generateDirectory(self, path, image, nameImage):
+        os.mkdir(path)
+        cv2.imwrite(os.path.join(path, nameImage), image)
+
+
 
 
 
