@@ -5,11 +5,13 @@ import cv2
 
 class FileManager:
 
+    #método que cuenta el número de archivos que hay en un directorio.
     def countNumberOfFiles(self, path):
         listPath = os.listdir(path)
         print("Numero de archivos: " + str(len(listPath)))
         return len(listPath)
 
+    #método que carga los archivos de train y guarda su información en los respectivos objetos o estructuras de datos necesarias.
     def loadTrainData(self, path, numberOfFiles):
         trainImagesArray = numberOfFiles * [0]
         trainInfoImagesArray = numberOfFiles * [0]
@@ -20,6 +22,7 @@ class FileManager:
             trainInfoImagesArray[i] = self.loadInfoSigns(trainFile, ('%05d' % i) + ".ppm")
         return trainImagesArray, trainInfoImagesArray
 
+    # método que carga los archivos de test y guarda su información en los respectivos objetos o estructuras de datos necesarias.
     def loadTestData(self, path, numberOfFiles):
         testImagesArray = numberOfFiles * [0]
         for i in range(numberOfFiles):
@@ -27,6 +30,7 @@ class FileManager:
             print("Readed " + path + "\\" + ('%05d' % (400 + i)) + ".jpg")
         return testImagesArray
 
+    #método que extrae la información de las señales del txt de las imagenes de train
     def loadInfoSigns(self, trainFile, name):
         listSigns = []
         cont = 0
@@ -40,6 +44,7 @@ class FileManager:
         image = ImageInfo(name,cont,listSigns)
         return image
 
+    #método que genera los ficheros resultados.
     def generateResultFile(self, path, textFile):
         if(os.path.isfile(path)):
             f = open(path, "a")
@@ -50,6 +55,7 @@ class FileManager:
             f.write(textFile)
             f.close()
 
+    #método que genera el directorio con las imágenes.
     def saveImageInDirectory(self, path, image, nameImage):
         if(os.path.isdir(path)):
             cv2.imwrite(os.path.join(path, nameImage), image)

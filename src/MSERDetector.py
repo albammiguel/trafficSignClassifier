@@ -2,7 +2,6 @@
 import cv2
 
 from RegionDetectedInfo import RegionDetectedInfo
-from FileManager import FileManager
 from typeSignEnum import typeSignEnum
 import numpy as np
 
@@ -12,6 +11,7 @@ class MSERDetector:
     mask_danger = None
     mask_stop = None
 
+    #metodo que recorta y escala las imagenes.
     def cropResizedImage(self, image, x1, x2, y1, y2):
         # cortamos el area de la imagen donde está la señal.
             cropp_image = image[y1:y2, x1:x2]
@@ -23,6 +23,7 @@ class MSERDetector:
             else:
                 return []
 
+    #método que clasifica las imágenes de entrenamiento.
     def getSignByTypeList(self, numberTrainFiles, imagesTrain, trainInfoImagesArray):
 
         prohibitionImagesList = []
@@ -55,11 +56,13 @@ class MSERDetector:
 
         return prohibitionImagesList, dangerImagesList, stopImagesList
 
+    #método que calcula la media.
     def calculateMean(self, list):
         avg_img = np.mean(list, axis=0)
         return avg_img.astype(np.uint8)
 
-
+    #método que crea la máscara basada en píxeles rojos.
+    # Deteccion de color con HSV - https://medium.com/@gastonace1/detecci%C3%B3n-de-objetos-por-colores-en-im%C3%A1genes-con-python-y-opencv-c8d9b6768ff
     def createMask(self,avg_image):
         if (len(avg_image) != 0):
             img_hsv = cv2.cvtColor(avg_image, cv2.COLOR_BGR2HSV)
@@ -73,12 +76,13 @@ class MSERDetector:
         else:
             return []
 
+    #método que se ejecuta para clasificar y crear las máscaras medias de las imágenes de train
     def executeDetector(self, numberTrainFiles, imagesTrain, trainInfoImagesArray):
         prohibitionImagesList, dangerImagesList, stopImagesList = self.getSignByTypeList(numberTrainFiles, imagesTrain, trainInfoImagesArray)
         avg_prohibition, avg_danger, avg_stop = self.calculateMean(prohibitionImagesList), self.calculateMean(dangerImagesList), self.calculateMean(stopImagesList)
         self.mask_prohibition, self.mask_danger, self.mask_stop = self.createMask(avg_prohibition), self.createMask(avg_danger), self.createMask(avg_stop)
 
-
+    #método de correalción de máscaras.
     def calculateCorrelationScore(self, mask_1, mask_2):
         correlation = 0
         for i in range(25):
@@ -87,6 +91,7 @@ class MSERDetector:
 
         return correlation
 
+    #método que detecta si dos ventanas están una encima de otra.
     def overlappingArea(self, region1, region2):
 
         region1_x1 = RegionDetectedInfo.__getattribute__(region1, 'x1')
@@ -104,8 +109,10 @@ class MSERDetector:
 
         return False
 
-
+    #método que evalua las detecciones de las imágenes de test
     def evaluateSignDetections(self, numberTestFiles, imagesTest, fileManager):
+
+        print("Realizando deteccion....")
 
         for i in range(numberTestFiles):
             detectedRegionsList = []
@@ -145,7 +152,7 @@ class MSERDetector:
             self.listDetections( "../resultado_por_tipo.txt", detect_regions_type, nameImage, fileManager)
             self.listDetections("../resultado.txt", regions_no_overlapping, nameImage, fileManager)
 
-
+    #método que chequea si dos regiones están duplicadas.
     def checkOverlapping(self, regions_with_sign):
         len_list = len(regions_with_sign)
         regions_copy = regions_with_sign.copy()
@@ -166,7 +173,7 @@ class MSERDetector:
         return regions_copy
 
 
-
+    #método que dibuja las secciones detectadas en las imágenes.
     def drawRectangle(self, sectionsList, image, nameImage, fileManager):
         for sectionImg in sectionsList:
             x1 = RegionDetectedInfo.__getattribute__(sectionImg, 'x1')
@@ -178,7 +185,7 @@ class MSERDetector:
 
         fileManager.saveImageInDirectory("../resultado_imgs", image, nameImage)
 
-
+    #método que escribe todas las regiones que hay en una imagen y se lo pasa al .txt
     def listDetections(self, path, sectionsList, nameImage, fileManager):
         text = ""
         for sectionImg in sectionsList:
@@ -195,7 +202,7 @@ class MSERDetector:
         fileManager.generateResultFile(path, text)
 
 
-
+    #método que detecta qué regiones son señales.
     def detectSign(self, detectedRegionsList):
 
         white_mask = np.ones((25,25), dtype=np.uint8)
@@ -216,10 +223,9 @@ class MSERDetector:
                 regions_with_sign.append(sectionImg)
 
 
-
         return regions_with_sign
 
-
+    #método que detecta las señales por tipo.
     def detectSignByType(self, detectedRegionsList):
 
         regions_with_sign_type = []
@@ -231,7 +237,7 @@ class MSERDetector:
             corrDanger = self.calculateCorrelationScore(mask_image, self.mask_danger)
             corrStop = self.calculateCorrelationScore(mask_image, self.mask_stop)
 
-            if (corrProhibition >= 50):
+            if (corrProhibition >= 40):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
                 regions_with_sign_type.append(sectionImg)
             elif(corrDanger >= 40):
