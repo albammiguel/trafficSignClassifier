@@ -208,10 +208,9 @@ class MSERDetector:
             corrStop = self.calculateCorrelationScore(mask_image, self.mask_stop)
             corrWhite = self.calculateCorrelationScore(mask_image, white_mask)
 
-            isWhite = False
-            if(corrWhite >= 300):
-                isWhite = True
-            elif (max(corrDanger, corrProhibition, corrStop) > 40 and not(isWhite)):
+            isWhite = (corrWhite >= 100 and max(corrDanger, corrProhibition, corrStop) < 40)
+
+            if (max(corrDanger, corrProhibition, corrStop) > 40 and not(isWhite)):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
                 RegionDetectedInfo.__setattr__(sectionImg, 'score', max(corrDanger, corrProhibition, corrStop))
                 regions_with_sign.append(sectionImg)
@@ -223,26 +222,23 @@ class MSERDetector:
 
     def detectSignByType(self, detectedRegionsList):
 
-        white_mask = 255 * np.ones((25, 25), dtype=np.uint8)
         regions_with_sign_type = []
         for sectionImg in detectedRegionsList:
 
-            score = RegionDetectedInfo.__getattribute__(sectionImg, 'score')
+            mask_image = RegionDetectedInfo.__getattribute__(sectionImg, 'image')
 
-            isWhite = False
-            if (score >= 300):
-                isWhite = True
-            elif (score >= 50 and not(isWhite)):
+            corrProhibition = self.calculateCorrelationScore(mask_image, self.mask_prohibition)
+            corrDanger = self.calculateCorrelationScore(mask_image, self.mask_danger)
+            corrStop = self.calculateCorrelationScore(mask_image, self.mask_stop)
+
+            if (corrProhibition >= 50):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
-                print("Es prohibicion")
                 regions_with_sign_type.append(sectionImg)
-            elif(score >= 40 and not(isWhite)):
+            elif(corrDanger >= 40):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 2)
-                print("Es peligro")
                 regions_with_sign_type.append(sectionImg)
-            elif(score >= 60 and not(isWhite)):
+            elif(corrStop >= 60):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 3)
-                print("Es stop")
                 regions_with_sign_type.append(sectionImg)
 
 
