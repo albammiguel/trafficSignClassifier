@@ -2,6 +2,7 @@
 import cv2
 
 from RegionDetectedInfo import RegionDetectedInfo
+from FileManager import FileManager
 from typeSignEnum import typeSignEnum
 import numpy as np
 
@@ -68,7 +69,7 @@ class MSERDetector:
             # obtener mascara de los valores mas altos de rojo.
             mask2 = cv2.inRange(img_hsv, (175, 50, 0), (180, 255, 255))
 
-            return cv2.bitwise_or(mask1, mask2)
+            return (np.array(cv2.bitwise_or(mask1, mask2))/255)
         else:
             return []
 
@@ -76,7 +77,6 @@ class MSERDetector:
         prohibitionImagesList, dangerImagesList, stopImagesList = self.getSignByTypeList(numberTrainFiles, imagesTrain, trainInfoImagesArray)
         avg_prohibition, avg_danger, avg_stop = self.calculateMean(prohibitionImagesList), self.calculateMean(dangerImagesList), self.calculateMean(stopImagesList)
         self.mask_prohibition, self.mask_danger, self.mask_stop = self.createMask(avg_prohibition), self.createMask(avg_danger), self.createMask(avg_stop)
-
 
 
     def calculateCorrelationScore(self, mask_1, mask_2):
@@ -98,22 +98,19 @@ class MSERDetector:
         dif_x1 = abs(region1_x1 - region2_x1)
         dif_y1 = abs(region1_y1 - region2_y1)
 
-        print("resta x1: " + str(dif_x1))
-        print("resta y1: " + str(dif_y1))
 
-        if((5 <= dif_x1 <= 21) or  (5 <= dif_y1 <= 21)):
+        if((4 <= dif_x1 <= 60) and  (4 <= dif_y1 <= 60)):
             return True
 
         return False
 
 
-
-
-    def evaluateSignDetections(self, numberTestFiles, imagesTest):
+    def evaluateSignDetections(self, numberTestFiles, imagesTest, fileManager):
 
         for i in range(numberTestFiles):
             detectedRegionsList = []
             image = imagesTest[i]
+            nameImage = ('%05d' % (400 + i)) + ".jpg"
             image_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             image_umbralize = cv2.adaptiveThreshold(image_grey, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 21, 2)
             mser = cv2.MSER_create(_delta=60, _max_variation=1, _max_area=1250, _min_area=90)
@@ -143,8 +140,10 @@ class MSERDetector:
 
             regions_with_sign = self.detectSign(detectedRegionsList)
             regions_no_overlapping = self.checkOverlapping(regions_with_sign)
-            self.drawRectangle(regions_no_overlapping, image)
-
+            detect_regions_type = self.detectSignByType(regions_no_overlapping)
+            self.drawRectangle(regions_no_overlapping, image, nameImage, fileManager)
+            self.listDetections( "../resultado_por_tipo.txt", detect_regions_type, nameImage, fileManager)
+            self.listDetections("../resultado.txt", regions_no_overlapping, nameImage, fileManager)
 
 
     def checkOverlapping(self, regions_with_sign):
@@ -158,11 +157,9 @@ class MSERDetector:
                     score1 = RegionDetectedInfo.__getattribute__(region1, 'score')
                     score2 = RegionDetectedInfo.__getattribute__(region2, 'score')
                     if (score1 < score2):
-                        print("Elegida señal +1")
                         if(region1 in regions_copy):
                             regions_copy.remove(region1)
                     else:
-                        print("Elegida señal 1")
                         if (region2 in regions_copy):
                             regions_copy.remove(region2)
 
@@ -170,7 +167,7 @@ class MSERDetector:
 
 
 
-    def drawRectangle(self, sectionsList, image):
+    def drawRectangle(self, sectionsList, image, nameImage, fileManager):
         for sectionImg in sectionsList:
             x1 = RegionDetectedInfo.__getattribute__(sectionImg, 'x1')
             x2 = RegionDetectedInfo.__getattribute__(sectionImg, 'x2')
@@ -179,16 +176,29 @@ class MSERDetector:
 
             cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
 
-        cv2.imshow("imagen", image)
-        cv2.waitKey()
+        fileManager.saveImageInDirectory("../resultado_imgs", image, nameImage)
 
 
+    def listDetections(self, path, sectionsList, nameImage, fileManager):
+        text = ""
+        for sectionImg in sectionsList:
+            x1 = RegionDetectedInfo.__getattribute__(sectionImg, 'x1')
+            x2 = RegionDetectedInfo.__getattribute__(sectionImg, 'x2')
+            y1 = RegionDetectedInfo.__getattribute__(sectionImg, 'y1')
+            y2 = RegionDetectedInfo.__getattribute__(sectionImg, 'y2')
+            score = RegionDetectedInfo.__getattribute__(sectionImg, 'score')
+            tipo = RegionDetectedInfo.__getattribute__(sectionImg, 'tipo')
+
+            text = text + nameImage + ';' + str(x1) + ';' + str(y1) + ';' + str(x2) + ';' + str(y2) + ';' + str(tipo) + ';' + str(score) + '\n'
+
+
+        fileManager.generateResultFile(path, text)
 
 
 
     def detectSign(self, detectedRegionsList):
 
-        white_mask = 255 * np.ones((25,25), dtype=np.uint8)
+        white_mask = np.ones((25,25), dtype=np.uint8)
         regions_with_sign = []
         for sectionImg in detectedRegionsList:
 
@@ -201,18 +211,43 @@ class MSERDetector:
             isWhite = False
             if(corrWhite >= 300):
                 isWhite = True
-                print("la imagen es blanca")
             elif (max(corrDanger, corrProhibition, corrStop) > 40 and not(isWhite)):
                 RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
                 RegionDetectedInfo.__setattr__(sectionImg, 'score', max(corrDanger, corrProhibition, corrStop))
-                print("----Señal detectada-----")
-                RegionDetectedInfo.printRegionDetected(sectionImg)
-
                 regions_with_sign.append(sectionImg)
 
 
 
         return regions_with_sign
+
+
+    def detectSignByType(self, detectedRegionsList):
+
+        white_mask = 255 * np.ones((25, 25), dtype=np.uint8)
+        regions_with_sign_type = []
+        for sectionImg in detectedRegionsList:
+
+            score = RegionDetectedInfo.__getattribute__(sectionImg, 'score')
+
+            isWhite = False
+            if (score >= 300):
+                isWhite = True
+            elif (score >= 50 and not(isWhite)):
+                RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 1)
+                print("Es prohibicion")
+                regions_with_sign_type.append(sectionImg)
+            elif(score >= 40 and not(isWhite)):
+                RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 2)
+                print("Es peligro")
+                regions_with_sign_type.append(sectionImg)
+            elif(score >= 60 and not(isWhite)):
+                RegionDetectedInfo.__setattr__(sectionImg, 'tipo', 3)
+                print("Es stop")
+                regions_with_sign_type.append(sectionImg)
+
+
+        return regions_with_sign_type
+
 
 
 

@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     # Evaluate sign detections
     if (args.detector == "mser"):
-        mserDetector.evaluateSignDetections(numberTestFiles, imagesTest)
+        mserDetector.evaluateSignDetections(numberTestFiles, imagesTest, fileManager)
 
 
 
